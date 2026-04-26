@@ -11,6 +11,23 @@ use Illuminate\Http\Request;
 
 class AccountController extends Controller
 {
+    public function payments(Request $request): JsonResponse
+    {
+        $user = AuthController::userFromBearerToken($request);
+
+        if (! $user) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+
+        $payments = Payment::query()
+            ->with('order')
+            ->whereHas('order', fn ($query) => $query->where('user_id', $user->id))
+            ->latest()
+            ->paginate(20);
+
+        return response()->json(['payments' => $payments]);
+    }
+
     public function summary(Request $request): JsonResponse
     {
         $user = AuthController::userFromBearerToken($request);
