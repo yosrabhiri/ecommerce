@@ -126,3 +126,87 @@ Current coverage includes:
 - registered user checkout
 - backend cart storage
 - payment confirmation
+
+## Improvements
+
+  1. Admin Dashboard
+Add an admin area to manage:
+
+products
+categories
+brands
+orders
+payments
+users
+stock
+This would make the project feel complete, not just customer-facing.
+
+2. Customer Account
+After login, add:
+
+profile page
+order history
+payment history
+saved cart
+address book
+logout/account menu
+Right now auth exists, but the user does not have a real “my account” space yet.
+
+3. Product Data
+Improve product database with:
+
+sizes
+colors
+stock per size/color
+material
+skin type
+skin concern
+occasion
+product tags
+This helps filtering and recommendations a lot.
+
+4. Recommendation System
+Start simple:
+
+similar products by category
+same brand
+similar price
+products often bought together
+recommendations from cart contents
+Then later make it AI-powered.
+
+5. Search
+The search bar is currently visual. Make it real:
+
+GET /api/products?search=serum
+Search by product name, brand, category, description.
+
+6. Real Payment Provider
+Your payment flow is a demo. Later connect:
+
+Stripe
+PayPal
+CMI or local payment provider if needed
+7. Order Management
+Add order statuses:
+
+pending
+paid
+confirmed
+processing
+shipped
+delivered
+cancelled
+refunded
+Then admin can update them.
+
+8. Better UX
+Improve:
+
+toast notifications
+loading skeletons
+empty states
+mobile cart
+account dropdown
+form validation messages
+success page after payment
