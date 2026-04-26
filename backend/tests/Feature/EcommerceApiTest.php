@@ -125,6 +125,44 @@ class EcommerceApiTest extends TestCase
         ]);
     }
 
+    public function test_admin_dashboard_requires_admin_user(): void
+    {
+        $this->seed(ProductSeeder::class);
+
+        $customerToken = $this->postJson('/api/auth/register', [
+            'name' => 'Customer',
+            'email' => 'customer@example.com',
+            'password' => 'password123',
+        ])->json('token');
+
+        $this
+            ->withHeader('Authorization', "Bearer {$customerToken}")
+            ->getJson('/api/admin/dashboard')
+            ->assertForbidden()
+            ->assertJsonPath('message', 'Admin access required.');
+
+        $adminToken = $this->postJson('/api/auth/register', [
+            'name' => 'Admin',
+            'email' => 'admin@example.com',
+            'password' => 'password123',
+        ])->json('token');
+
+        \App\Models\User::query()
+            ->where('email', 'admin@example.com')
+            ->update(['is_admin' => true]);
+
+        $this
+            ->withHeader('Authorization', "Bearer {$adminToken}")
+            ->getJson('/api/admin/dashboard')
+            ->assertOk()
+            ->assertJsonStructure([
+                'stats' => ['products', 'orders', 'customers', 'revenue'],
+                'recentOrders',
+                'lowStockProducts',
+                'topProducts',
+            ]);
+    }
+
     public function test_cart_items_are_stored_on_the_backend(): void
     {
         $this->seed(ProductSeeder::class);

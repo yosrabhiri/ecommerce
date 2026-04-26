@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -15,5 +16,14 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call(ProductSeeder::class);
+
+        User::query()->updateOrCreate(
+            ['email' => 'admin@maisonglow.test'],
+            [
+                'name' => 'Maison Admin',
+                'password' => 'password123',
+                'is_admin' => true,
+            ]
+        );
     }
 }

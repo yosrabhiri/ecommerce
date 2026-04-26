@@ -5,6 +5,7 @@ import { Header } from './components/Header';
 import { LoadingState } from './components/LoadingState';
 import { MobileDrawer } from './components/MobileDrawer';
 import { AuthPage } from './pages/AuthPage';
+import { AdminPage } from './pages/AdminPage';
 import { PaymentPage } from './pages/PaymentPage';
 import { ProductPage } from './pages/ProductPage';
 import { ShopPage } from './pages/ShopPage';
@@ -15,6 +16,32 @@ import { fetchOrder } from './services/paymentApi';
 import { fetchFilters, fetchProduct, fetchProducts } from './services/productsApi';
 import '../css/app.css';
 
+class AppErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <main className="page-shell">
+          <section className="app-error">
+            <strong>Frontend error</strong>
+            <span>{this.state.error.message || 'The page crashed while rendering.'}</span>
+          </section>
+        </main>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 function getProductIdFromPath() {
   const match = window.location.pathname.match(/^\/products\/(\d+)/);
   return match ? Number(match[1]) : null;
@@ -22,6 +49,10 @@ function getProductIdFromPath() {
 
 function isAccountPath() {
   return window.location.pathname === '/account';
+}
+
+function isAdminPath() {
+  return window.location.pathname === '/admin';
 }
 
 function getPaymentOrderIdFromPath() {
@@ -43,6 +74,8 @@ function App() {
   });
   const [selectedProductId, setSelectedProductId] = useState(getProductIdFromPath());
   const [accountOpen, setAccountOpen] = useState(isAccountPath());
+  const [adminOpen, setAdminOpen] = useState(isAdminPath());
+  const [authRedirect, setAuthRedirect] = useState(isAdminPath() ? 'admin' : null);
   const [paymentOrderId, setPaymentOrderId] = useState(getPaymentOrderIdFromPath());
   const [paymentOrder, setPaymentOrder] = useState(null);
   const [paymentStatus, setPaymentStatus] = useState(paymentOrderId ? 'loading' : 'idle');
@@ -50,6 +83,7 @@ function App() {
   const [cartOpen, setCartOpen] = useState(false);
   const [cart, setCart] = useState([]);
   const [authUser, setAuthUser] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const [checkoutStatus, setCheckoutStatus] = useState(null);
   const [checkingOut, setCheckingOut] = useState(false);
   const [cartStatus, setCartStatus] = useState(null);
@@ -62,7 +96,8 @@ function App() {
   useEffect(() => {
     fetchCurrentUser()
       .then((payload) => setAuthUser(payload?.user || null))
-      .catch(() => setAuthUser(null));
+      .catch(() => setAuthUser(null))
+      .finally(() => setAuthChecked(true));
   }, []);
 
   useEffect(() => {
@@ -119,6 +154,7 @@ function App() {
     const handlePopState = () => {
       setSelectedProductId(getProductIdFromPath());
       setAccountOpen(isAccountPath());
+      setAdminOpen(isAdminPath());
       setPaymentOrderId(getPaymentOrderIdFromPath());
     };
 
@@ -177,6 +213,8 @@ function App() {
   const openProduct = (product) => {
     window.history.pushState(null, '', `/products/${product.id}`);
     setAccountOpen(false);
+    setAdminOpen(false);
+    setAuthRedirect(null);
     setPaymentOrderId(null);
     setSelectedProductId(product.id);
   };
@@ -184,15 +222,29 @@ function App() {
   const goHome = () => {
     window.history.pushState(null, '', '/');
     setAccountOpen(false);
+    setAdminOpen(false);
+    setAuthRedirect(null);
     setPaymentOrderId(null);
     setSelectedProductId(null);
   };
 
-  const openAccount = () => {
+  const openAccount = (redirectTo = null) => {
     window.history.pushState(null, '', '/account');
     setSelectedProductId(null);
     setPaymentOrderId(null);
+    setAdminOpen(false);
+    setAuthRedirect(redirectTo);
     setAccountOpen(true);
+    setCartOpen(false);
+  };
+
+  const openAdmin = () => {
+    window.history.pushState(null, '', '/admin');
+    setSelectedProductId(null);
+    setPaymentOrderId(null);
+    setAccountOpen(false);
+    setAuthRedirect(null);
+    setAdminOpen(true);
     setCartOpen(false);
   };
 
@@ -200,6 +252,7 @@ function App() {
     window.history.pushState(null, '', `/payment/${order.id}`);
     setSelectedProductId(null);
     setAccountOpen(false);
+    setAdminOpen(false);
     setPaymentOrderId(order.id);
     setPaymentOrder(order);
     setPaymentStatus('ready');
@@ -256,7 +309,7 @@ function App() {
     setCheckoutStatus(null);
 
     if (!authUser) {
-      openAccount();
+      openAccount('checkout');
       return;
     }
 
@@ -273,6 +326,12 @@ function App() {
 
   const handleAuthenticated = (user) => {
     setAuthUser(user);
+
+    if (user.is_admin || authRedirect === 'admin') {
+      openAdmin();
+      return;
+    }
+
     setCartOpen(true);
     setCheckoutStatus('Account ready. You can continue checkout from your panier.');
   };
@@ -297,12 +356,21 @@ function App() {
           onOpenCart={() => setCartOpen(true)}
           onOpenMenu={() => setMobilePanelOpen(true)}
           onAccount={openAccount}
+          onAdmin={openAdmin}
           onLogout={logout}
           isLoggedIn={Boolean(authUser)}
+          isAdmin={Boolean(authUser?.is_admin)}
           onHome={goHome}
         />
 
-        {paymentOrderId && paymentStatus === 'loading' ? (
+        {adminOpen && !authChecked ? (
+          <LoadingState
+            title="Checking admin access"
+            message="Reading your saved login before opening the dashboard..."
+          />
+        ) : adminOpen ? (
+          <AdminPage user={authUser} onAccount={() => openAccount('admin')} />
+        ) : paymentOrderId && paymentStatus === 'loading' ? (
           <LoadingState
             title="Loading payment"
             message={`Requesting order #${paymentOrderId} from Laravel...`}
@@ -380,4 +448,8 @@ const emptyFilters = {
   ],
 };
 
-createRoot(document.getElementById('root')).render(<App />);
+createRoot(document.getElementById('root')).render(
+  <AppErrorBoundary>
+    <App />
+  </AppErrorBoundary>
+);

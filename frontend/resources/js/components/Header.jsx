@@ -1,6 +1,6 @@
-import { ChevronDown, Heart, LogIn, LogOut, Menu, Search, ShoppingBag, User } from 'lucide-react';
+import { ChevronDown, Heart, LayoutDashboard, LogIn, LogOut, Menu, Search, ShoppingBag, User } from 'lucide-react';
 
-export function Header({ cartCount, isLoggedIn, onOpenCart, onOpenMenu, onHome, onAccount, onLogout }) {
+export function Header({ cartCount, isLoggedIn, isAdmin, onOpenCart, onOpenMenu, onHome, onAccount, onAdmin, onLogout }) {
   return (
     <>
       <header className="topbar">
@@ -24,6 +24,12 @@ export function Header({ cartCount, isLoggedIn, onOpenCart, onOpenMenu, onHome, 
               <User size={19} />
             </button>
             <div className="account-popover">
+              {isAdmin && (
+                <button onClick={onAdmin}>
+                  <LayoutDashboard size={16} />
+                  Admin
+                </button>
+              )}
               {isLoggedIn ? (
                 <button onClick={onLogout}>
                   <LogOut size={16} />
