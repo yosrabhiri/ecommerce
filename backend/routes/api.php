@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\CheckoutController;
+use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AdminController;
@@ -22,6 +23,8 @@ Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::get('/auth/me', [AuthController::class, 'me']);
 Route::post('/auth/logout', [AuthController::class, 'logout']);
+
+Route::get('/account/summary', [AccountController::class, 'summary']);
 
 Route::get('/orders/{order}', [OrderController::class, 'show']);
 Route::post('/checkout', [CheckoutController::class, 'store']);

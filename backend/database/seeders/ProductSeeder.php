@@ -148,6 +148,8 @@ class ProductSeeder extends Seeder
         foreach ($catalog as $categoryName => $products) {
             foreach ($products as [$brandName, $name, $imageKeywords, $price, $tag, $description]) {
                 $oldPrice = $tag === 'Sale' ? $price + 18 : null;
+                $recommendationData = $this->recommendationData($categoryName, $imageKeywords, $id);
+                $variants = $this->variantsFor($categoryName, $id);
 
                 $product = Product::query()->updateOrCreate(
                     ['sku' => 'MG-'.str_pad((string) $id, 4, '0', STR_PAD_LEFT)],
@@ -157,16 +159,22 @@ class ProductSeeder extends Seeder
                         'name' => $name,
                         'slug' => Str::slug($name.'-'.$id),
                         'description' => $description,
+                        'material' => $recommendationData['material'],
+                        'skin_type' => $recommendationData['skin_type'],
+                        'skin_concern' => $recommendationData['skin_concern'],
+                        'occasion' => $recommendationData['occasion'],
+                        'product_tags' => $recommendationData['product_tags'],
                         'price' => $price,
                         'old_price' => $oldPrice,
                         'rating' => round(4.2 + (($id % 8) * 0.1), 1),
                         'tag' => $tag,
-                        'stock' => 24 + ($id % 42),
+                        'stock' => collect($variants)->sum('stock'),
                         'is_active' => true,
                     ]
                 );
 
                 $product->images()->delete();
+                $product->variants()->delete();
 
                 foreach ($this->imageUrls($categoryName, $id) as $position => $url) {
                     $product->images()->create([
@@ -176,9 +184,111 @@ class ProductSeeder extends Seeder
                     ]);
                 }
 
+                foreach ($variants as $variantIndex => $variant) {
+                    $product->variants()->create([
+                        'sku' => $product->sku.'-V'.str_pad((string) ($variantIndex + 1), 2, '0', STR_PAD_LEFT),
+                        ...$variant,
+                    ]);
+                }
+
                 $id++;
             }
         }
+    }
+
+    private function recommendationData(string $categoryName, string $keywords, int $seed): array
+    {
+        $keywordTags = collect(explode(',', $keywords))
+            ->map(fn (string $tag) => trim($tag))
+            ->filter()
+            ->values();
+
+        $base = [
+            'material' => null,
+            'skin_type' => null,
+            'skin_concern' => null,
+            'occasion' => null,
+            'product_tags' => $keywordTags->all(),
+        ];
+
+        if ($categoryName === 'Skincare') {
+            $skinTypes = ['Dry', 'Sensitive', 'Combination', 'Oily', 'Normal'];
+            $concerns = ['Hydration', 'Barrier repair', 'Glow', 'Redness', 'Texture', 'Pores'];
+
+            return [
+                ...$base,
+                'material' => $this->pick(['Cream', 'Gel', 'Oil', 'Balm', 'Mist'], $seed),
+                'skin_type' => $this->pick($skinTypes, $seed),
+                'skin_concern' => $this->pick($concerns, $seed + 2),
+                'occasion' => $this->pick(['Morning routine', 'Night routine', 'Travel', 'Post-shower'], $seed),
+                'product_tags' => $keywordTags->merge(['beauty', 'routine', strtolower($this->pick($concerns, $seed + 2))])->unique()->values()->all(),
+            ];
+        }
+
+        $materials = [
+            'Dresses' => ['Linen', 'Satin', 'Cotton', 'Knit', 'Silk blend', 'Jersey', 'Denim'],
+            'Knitwear' => ['Alpaca blend', 'Organic cotton', 'Merino wool', 'Cashmere touch', 'Boucle', 'Wool blend'],
+            'Sets' => ['Ribbed cotton', 'Knit', 'Jersey', 'Linen', 'Modal', 'Satin', 'Cotton gauze'],
+            'Accessories' => ['Silk', 'Leather', 'Gold plated', 'Cotton', 'Canvas', 'Wool', 'Ceramic'],
+        ];
+
+        return [
+            ...$base,
+            'material' => $this->pick($materials[$categoryName] ?? ['Cotton'], $seed),
+            'occasion' => $this->pick(['Everyday', 'Work', 'Evening', 'Travel', 'Weekend', 'Occasion'], $seed + 1),
+            'product_tags' => $keywordTags->merge(['fashion', strtolower($categoryName), strtolower($this->pick(['Everyday', 'Work', 'Evening', 'Travel', 'Weekend', 'Occasion'], $seed + 1))])->unique()->values()->all(),
+        ];
+    }
+
+    private function variantsFor(string $categoryName, int $seed): array
+    {
+        if ($categoryName === 'Skincare') {
+            return collect(['30 ml', '50 ml', '100 ml'])
+                ->map(fn (string $size, int $index) => [
+                    'size' => $size,
+                    'color' => null,
+                    'stock' => 6 + (($seed + $index) % 12),
+                ])
+                ->all();
+        }
+
+        if ($categoryName === 'Accessories') {
+            return collect($this->colorsFor($seed, 3))
+                ->map(fn (string $color, int $index) => [
+                    'size' => 'One Size',
+                    'color' => $color,
+                    'stock' => 5 + (($seed + $index) % 10),
+                ])
+                ->all();
+        }
+
+        $sizes = ['XS', 'S', 'M', 'L', 'XL'];
+        $colors = $this->colorsFor($seed, 3);
+
+        return collect($sizes)
+            ->flatMap(fn (string $size, int $sizeIndex) => collect($colors)->map(fn (string $color, int $colorIndex) => [
+                'size' => $size,
+                'color' => $color,
+                'stock' => 2 + (($seed + $sizeIndex + $colorIndex) % 8),
+            ]))
+            ->values()
+            ->all();
+    }
+
+    private function colorsFor(int $seed, int $count): array
+    {
+        $colors = ['Ivory', 'Black', 'Rose', 'Sage', 'Chocolate', 'Cream', 'Denim', 'Gold'];
+
+        return collect(range(0, $count - 1))
+            ->map(fn (int $offset) => $this->pick($colors, $seed + $offset))
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function pick(array $values, int $seed): string
+    {
+        return $values[$seed % count($values)];
     }
 
     private function imageUrls(string $categoryName, int $seed): array

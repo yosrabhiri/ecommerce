@@ -31,10 +31,16 @@ export function Header({ cartCount, isLoggedIn, isAdmin, onOpenCart, onOpenMenu,
                 </button>
               )}
               {isLoggedIn ? (
-                <button onClick={onLogout}>
-                  <LogOut size={16} />
-                  Logout
-                </button>
+                <>
+                  <button onClick={onAccount}>
+                    <User size={16} />
+                    Account
+                  </button>
+                  <button onClick={onLogout}>
+                    <LogOut size={16} />
+                    Logout
+                  </button>
+                </>
               ) : (
                 <button onClick={onAccount}>
                   <LogIn size={16} />

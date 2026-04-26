@@ -96,7 +96,7 @@ export function ShopPage({ filters, selectedFilters, products, onFiltersChange, 
           </div>
           {filters.tags.length > 0 && (
             <div>
-              <h3>Tags</h3>
+              <h3>Promo</h3>
               {filters.tags.map((tag) => (
                 <label key={tag}>
                   <input
@@ -109,11 +109,25 @@ export function ShopPage({ filters, selectedFilters, products, onFiltersChange, 
               ))}
             </div>
           )}
+          <FilterGroup title="Sizes" items={filters.sizes} selected={selectedFilters.sizes} onToggle={(value) => toggleArrayFilter('sizes', value)} />
+          <FilterGroup title="Colors" items={filters.colors} selected={selectedFilters.colors} onToggle={(value) => toggleArrayFilter('colors', value)} />
+          <FilterGroup title="Material" items={filters.materials} selected={selectedFilters.materials} onToggle={(value) => toggleArrayFilter('materials', value)} />
+          <FilterGroup title="Skin type" items={filters.skinTypes} selected={selectedFilters.skinTypes} onToggle={(value) => toggleArrayFilter('skinTypes', value)} />
+          <FilterGroup title="Skin concern" items={filters.skinConcerns} selected={selectedFilters.skinConcerns} onToggle={(value) => toggleArrayFilter('skinConcerns', value)} />
+          <FilterGroup title="Occasion" items={filters.occasions} selected={selectedFilters.occasions} onToggle={(value) => toggleArrayFilter('occasions', value)} />
+          <FilterGroup title="Product tags" items={filters.productTags} selected={selectedFilters.productTags} onToggle={(value) => toggleArrayFilter('productTags', value)} />
           <div>
             <button className="clear-filters" onClick={() => onFiltersChange({
               category: 'All',
               brands: [],
               tags: [],
+              sizes: [],
+              colors: [],
+              materials: [],
+              skinTypes: [],
+              skinConcerns: [],
+              occasions: [],
+              productTags: [],
               priceRange: null,
               sort: 'featured',
             })}>
@@ -143,5 +157,27 @@ export function ShopPage({ filters, selectedFilters, products, onFiltersChange, 
         )}
       </section>
     </>
+  );
+}
+
+function FilterGroup({ title, items = [], selected = [], onToggle }) {
+  if (!items.length) {
+    return null;
+  }
+
+  return (
+    <div>
+      <h3>{title}</h3>
+      {items.map((item) => (
+        <label key={item}>
+          <input
+            type="checkbox"
+            checked={selected.includes(item)}
+            onChange={() => onToggle(item)}
+          />
+          {item}
+        </label>
+      ))}
+    </div>
   );
 }

@@ -25,6 +25,34 @@ function buildProductQuery(filters = {}) {
     params.set('tags', filters.tags.join(','));
   }
 
+  if (filters.sizes?.length) {
+    params.set('sizes', filters.sizes.join(','));
+  }
+
+  if (filters.colors?.length) {
+    params.set('colors', filters.colors.join(','));
+  }
+
+  if (filters.materials?.length) {
+    params.set('materials', filters.materials.join(','));
+  }
+
+  if (filters.skinTypes?.length) {
+    params.set('skin_types', filters.skinTypes.join(','));
+  }
+
+  if (filters.skinConcerns?.length) {
+    params.set('skin_concerns', filters.skinConcerns.join(','));
+  }
+
+  if (filters.occasions?.length) {
+    params.set('occasions', filters.occasions.join(','));
+  }
+
+  if (filters.productTags?.length) {
+    params.set('product_tags', filters.productTags.join(','));
+  }
+
   if (filters.priceRange?.min != null) {
     params.set('min_price', filters.priceRange.min);
   }

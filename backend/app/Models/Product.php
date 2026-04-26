@@ -15,6 +15,11 @@ class Product extends Model
         'name',
         'slug',
         'description',
+        'material',
+        'skin_type',
+        'skin_concern',
+        'occasion',
+        'product_tags',
         'price',
         'old_price',
         'rating',
@@ -28,6 +33,7 @@ class Product extends Model
         'old_price' => 'decimal:2',
         'rating' => 'decimal:1',
         'is_active' => 'boolean',
+        'product_tags' => 'array',
     ];
 
     public function category(): BelongsTo
@@ -43,5 +49,10 @@ class Product extends Model
     public function images(): HasMany
     {
         return $this->hasMany(ProductImage::class)->orderBy('position');
+    }
+
+    public function variants(): HasMany
+    {
+        return $this->hasMany(ProductVariant::class);
     }
 }

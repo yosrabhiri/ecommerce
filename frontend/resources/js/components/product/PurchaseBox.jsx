@@ -2,6 +2,8 @@ import { useState } from 'react';
 
 export function PurchaseBox({ product, onAdd }) {
   const [quantity, setQuantity] = useState(1);
+  const sizes = product.sizes?.length ? product.sizes : [product.category === 'Skincare' ? '30 ml' : 'Standard'];
+  const colors = product.colors || [];
 
   const addQuantityToCart = () => {
     onAdd(product, quantity);
@@ -10,24 +12,24 @@ export function PurchaseBox({ product, onAdd }) {
   return (
     <>
       <div className="option-group">
-        <p>Package quantity: <strong>{product.category === 'Skincare' ? '30 ml' : '1 piece'}</strong></p>
+        <p>{product.category === 'Skincare' ? 'Package size' : 'Size'}</p>
         <div className="pill-options">
-          <button className="active">{product.category === 'Skincare' ? '30 ml' : 'Standard'}</button>
-          <button>{product.category === 'Skincare' ? '60 ml' : 'Gift wrap'}</button>
+          {sizes.slice(0, 5).map((size, index) => (
+            <button key={size} className={index === 0 ? 'active' : ''}>{size}</button>
+          ))}
         </div>
       </div>
 
-      <div className="purchase-options">
-        <label className="purchase-option active">
-          <input type="radio" name="purchase" defaultChecked />
-          <span>One-Time Purchase</span>
-        </label>
-        <label className="purchase-option">
-          <input type="radio" name="purchase" />
-          <span>Monthly Subscription & Save 5%</span>
-          <small>Deliver every 30 days. You can pause, skip, or cancel anytime.</small>
-        </label>
-      </div>
+      {colors.length > 0 && (
+        <div className="option-group">
+          <p>Color</p>
+          <div className="pill-options">
+            {colors.slice(0, 5).map((color, index) => (
+              <button key={color} className={index === 0 ? 'active' : ''}>{color}</button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="buy-row">
         <div className="quantity-stepper" aria-label="Quantity">

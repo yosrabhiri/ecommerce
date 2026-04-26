@@ -5,7 +5,7 @@ import { ProductBenefits } from '../components/product/ProductBenefits';
 import { ProductGallery } from '../components/product/ProductGallery';
 import { PurchaseBox } from '../components/product/PurchaseBox';
 
-export function ProductPage({ product, products, onBack, onAddToCart }) {
+export function ProductPage({ product, products, onBack, onAddToCart, onSelectProduct }) {
   const galleryImages = product.images?.length ? product.images : [product.image];
   const relatedProducts = products
     .filter((item) => item.id !== product.id && item.category !== product.category)
@@ -36,7 +36,7 @@ export function ProductPage({ product, products, onBack, onAddToCart }) {
         <PurchaseBox product={product} onAdd={onAddToCart} />
         <ProductBenefits />
         <ProductAccordions product={product} />
-        <FrequentlyBought products={relatedProducts} onAdd={onAddToCart} />
+        <FrequentlyBought products={relatedProducts} onAdd={onAddToCart} onSelect={onSelectProduct} />
       </div>
     </section>
   );

@@ -6,6 +6,7 @@ import { LoadingState } from './components/LoadingState';
 import { MobileDrawer } from './components/MobileDrawer';
 import { AuthPage } from './pages/AuthPage';
 import { AdminPage } from './pages/AdminPage';
+import { CustomerAccountPage } from './pages/CustomerAccountPage';
 import { PaymentPage } from './pages/PaymentPage';
 import { ProductPage } from './pages/ProductPage';
 import { ShopPage } from './pages/ShopPage';
@@ -69,6 +70,13 @@ function App() {
     category: 'All',
     brands: [],
     tags: [],
+    sizes: [],
+    colors: [],
+    materials: [],
+    skinTypes: [],
+    skinConcerns: [],
+    occasions: [],
+    productTags: [],
     priceRange: null,
     sort: 'featured',
   });
@@ -332,8 +340,17 @@ function App() {
       return;
     }
 
-    setCartOpen(true);
-    setCheckoutStatus('Account ready. You can continue checkout from your panier.');
+    if (authRedirect === 'checkout') {
+      setCartOpen(true);
+      setCheckoutStatus('Account ready. You can continue checkout from your panier.');
+      return;
+    }
+
+    setSelectedProductId(null);
+    setPaymentOrderId(null);
+    setAdminOpen(false);
+    setAuthRedirect(null);
+    setAccountOpen(true);
   };
 
   const handlePaid = (order) => {
@@ -382,6 +399,12 @@ function App() {
           </div>
         ) : paymentOrder ? (
           <PaymentPage order={paymentOrder} onPaid={handlePaid} />
+        ) : accountOpen && authUser ? (
+          <CustomerAccountPage
+            user={authUser}
+            onPayOrder={openPayment}
+            onContinueShopping={goHome}
+          />
         ) : accountOpen ? (
           <AuthPage cartCount={cartCount} onAuthenticated={handleAuthenticated} />
         ) : selectedProductId && productStatus === 'loading' ? (
@@ -400,6 +423,7 @@ function App() {
             products={allProducts}
             onBack={goHome}
             onAddToCart={addToCart}
+            onSelectProduct={openProduct}
           />
         ) : (
           <ShopPage
@@ -439,6 +463,13 @@ const emptyFilters = {
   categories: ['All'],
   brands: [],
   tags: [],
+  sizes: [],
+  colors: [],
+  materials: [],
+  skinTypes: [],
+  skinConcerns: [],
+  occasions: [],
+  productTags: [],
   priceRanges: [],
   sorts: [
     { label: 'Featured', value: 'featured' },

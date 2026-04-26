@@ -22,7 +22,57 @@ class EcommerceApiTest extends TestCase
             ->assertJsonCount(20)
             ->assertJsonPath('0.category', 'Skincare')
             ->assertJsonStructure([
-                '*' => ['id', 'brand', 'name', 'category', 'price', 'oldPrice', 'rating', 'tag', 'image', 'images', 'description'],
+                '*' => [
+                    'id',
+                    'brand',
+                    'name',
+                    'category',
+                    'price',
+                    'oldPrice',
+                    'rating',
+                    'tag',
+                    'stock',
+                    'material',
+                    'skinType',
+                    'skinConcern',
+                    'occasion',
+                    'productTags',
+                    'sizes',
+                    'colors',
+                    'variants',
+                    'image',
+                    'images',
+                    'description',
+                ],
+            ]);
+    }
+
+    public function test_products_can_be_filtered_by_recommendation_attributes(): void
+    {
+        $this->seed(ProductSeeder::class);
+
+        $filters = $this->getJson('/api/filters')
+            ->assertOk()
+            ->assertJsonStructure([
+                'sizes',
+                'colors',
+                'materials',
+                'skinTypes',
+                'skinConcerns',
+                'occasions',
+                'productTags',
+            ]);
+
+        $product = Product::query()->with('variants')->firstOrFail();
+        $material = $product->material;
+        $size = $product->variants->first()->size;
+
+        $this
+            ->getJson('/api/products?materials='.urlencode($material).'&sizes='.urlencode($size))
+            ->assertOk()
+            ->assertJsonFragment([
+                'id' => $product->id,
+                'material' => $material,
             ]);
     }
 
@@ -123,6 +173,48 @@ class EcommerceApiTest extends TestCase
             'status' => 'paid',
             'card_last_four' => '4242',
         ]);
+    }
+
+    public function test_customer_account_summary_shows_orders_and_payments(): void
+    {
+        $this->seed(ProductSeeder::class);
+
+        $product = Product::query()->firstOrFail();
+        $token = $this->postJson('/api/auth/register', [
+            'name' => 'Youssra',
+            'email' => 'account@example.com',
+            'password' => 'password123',
+        ])->json('token');
+
+        $order = $this
+            ->withHeader('Authorization', "Bearer {$token}")
+            ->postJson('/api/checkout', [
+                'items' => [
+                    ['product_id' => $product->id, 'quantity' => 1],
+                ],
+            ])
+            ->json('order');
+
+        $this
+            ->withHeader('Authorization', "Bearer {$token}")
+            ->postJson("/api/orders/{$order['id']}/payment", [
+                'cardholder_name' => 'Youssra Test',
+                'card_number' => '4242 4242 4242 4242',
+                'expiry' => now()->addYear()->format('m/y'),
+                'cvc' => '123',
+            ])
+            ->assertCreated();
+
+        $this
+            ->withHeader('Authorization', "Bearer {$token}")
+            ->getJson('/api/account/summary')
+            ->assertOk()
+            ->assertJsonPath('user.email', 'account@example.com')
+            ->assertJsonPath('stats.orders', 1)
+            ->assertJsonPath('stats.paidOrders', 1)
+            ->assertJsonPath('orders.0.payment_status', 'paid')
+            ->assertJsonStructure(['orders' => [['items' => [['product' => ['images']]]]]])
+            ->assertJsonPath('payments.0.card_last_four', '4242');
     }
 
     public function test_admin_dashboard_requires_admin_user(): void
