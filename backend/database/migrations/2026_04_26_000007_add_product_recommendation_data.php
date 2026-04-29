@@ -25,7 +25,8 @@ return new class extends Migration
             $table->unsignedInteger('stock')->default(0);
             $table->timestamps();
 
-            $table->index(['size', 'color']);
+            $table->index(['size']);
+            $table->index(['color']);
         });
     }
 
