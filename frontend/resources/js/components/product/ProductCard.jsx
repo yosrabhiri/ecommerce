@@ -1,10 +1,15 @@
 import { Heart } from 'lucide-react';
 import { Rating } from '../Rating';
 
-export function ProductCard({ product, onSelect, onAdd }) {
+export function ProductCard({ product, onSelect, onAdd, isFavorite = false, onToggleFavorite }) {
   const handleAdd = (event) => {
     event.stopPropagation();
     onAdd(product);
+  };
+
+  const handleFavorite = (event) => {
+    event.stopPropagation();
+    onToggleFavorite?.(product.id);
   };
 
   return (
@@ -17,8 +22,12 @@ export function ProductCard({ product, onSelect, onAdd }) {
     >
       <div className="product-media">
         {product.tag && <span className={`tag ${product.tag.toLowerCase()}`}>{product.tag}</span>}
-        <button className="icon-button favorite" aria-label={`Save ${product.name}`} onClick={(event) => event.stopPropagation()}>
-          <Heart size={19} />
+        <button
+          className={`icon-button favorite ${isFavorite ? 'active' : ''}`}
+          aria-label={`Save ${product.name}`}
+          onClick={handleFavorite}
+        >
+          <Heart size={19} fill={isFavorite ? 'currentColor' : 'none'} />
         </button>
         <img src={product.image} alt={product.name} />
       </div>

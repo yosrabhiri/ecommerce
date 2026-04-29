@@ -17,6 +17,10 @@ function buildProductQuery(filters = {}) {
     params.set('category', filters.category);
   }
 
+  if (filters.search) {
+    params.set('search', filters.search);
+  }
+
   if (filters.brands?.length) {
     params.set('brands', filters.brands.join(','));
   }
@@ -98,4 +102,15 @@ export async function fetchFilters() {
   }
 
   return response.json();
+}
+
+export async function fetchRecommendations(productId) {
+  const response = await fetch(`${API_URL}/products/${productId}/recommendations`);
+
+  if (!response.ok) {
+    throw new Error('Unable to load recommendations');
+  }
+
+  const products = await response.json();
+  return products.map(normalizeProduct);
 }

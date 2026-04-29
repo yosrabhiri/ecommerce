@@ -4,9 +4,12 @@ import { CartDrawer } from './components/cart/CartDrawer';
 import { Header } from './components/Header';
 import { LoadingState } from './components/LoadingState';
 import { MobileDrawer } from './components/MobileDrawer';
+import { WishlistDrawer } from './components/WishlistDrawer';
 import { AuthPage } from './pages/AuthPage';
 import { AdminPage } from './pages/AdminPage';
+import { AboutPage } from './pages/AboutPage';
 import { CustomerAccountPage } from './pages/CustomerAccountPage';
+import { PartnershipPage } from './pages/PartnershipPage';
 import { PaymentPage } from './pages/PaymentPage';
 import { ProductPage } from './pages/ProductPage';
 import { ShopPage } from './pages/ShopPage';
@@ -79,6 +82,7 @@ function App() {
     productTags: [],
     priceRange: null,
     sort: 'featured',
+    search: '',
   });
   const [selectedProductId, setSelectedProductId] = useState(getProductIdFromPath());
   const [accountOpen, setAccountOpen] = useState(isAccountPath());
@@ -100,6 +104,24 @@ function App() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [productStatus, setProductStatus] = useState(selectedProductId ? 'loading' : 'idle');
   const [productError, setProductError] = useState(null);
+  const [wishlistOpen, setWishlistOpen] = useState(false);
+  const [staticPage, setStaticPage] = useState(null);
+  const [favorites, setFavorites] = useState(() => {
+    const saved = localStorage.getItem('mg_favorites');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('mg_favorites', JSON.stringify(favorites));
+  }, [favorites]);
+
+  const toggleFavorite = (productId) => {
+    setFavorites((currentFavorites) => (
+      currentFavorites.includes(productId)
+        ? currentFavorites.filter((id) => id !== productId)
+        : [...currentFavorites, productId]
+    ));
+  };
 
   useEffect(() => {
     fetchCurrentUser()
@@ -164,6 +186,7 @@ function App() {
       setAccountOpen(isAccountPath());
       setAdminOpen(isAdminPath());
       setPaymentOrderId(getPaymentOrderIdFromPath());
+      setStaticPage(null);
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -224,6 +247,7 @@ function App() {
     setAdminOpen(false);
     setAuthRedirect(null);
     setPaymentOrderId(null);
+    setStaticPage(null);
     setSelectedProductId(product.id);
   };
 
@@ -234,6 +258,59 @@ function App() {
     setAuthRedirect(null);
     setPaymentOrderId(null);
     setSelectedProductId(null);
+    setStaticPage(null);
+  };
+
+  const resetShopFilters = (overrides = {}) => {
+    setShopFilters({
+      category: 'All',
+      brands: [],
+      tags: [],
+      sizes: [],
+      colors: [],
+      materials: [],
+      skinTypes: [],
+      skinConcerns: [],
+      occasions: [],
+      productTags: [],
+      priceRange: null,
+      sort: 'featured',
+      search: '',
+      ...overrides,
+    });
+  };
+
+  const handleSearch = (value) => {
+    window.history.pushState(null, '', '/');
+    setAccountOpen(false);
+    setAdminOpen(false);
+    setAuthRedirect(null);
+    setPaymentOrderId(null);
+    setSelectedProductId(null);
+    setStaticPage(null);
+    setShopFilters((currentFilters) => ({ ...currentFilters, search: value }));
+  };
+
+  const handleQuickFilter = (category, tag) => {
+    window.history.pushState(null, '', '/');
+    setAccountOpen(false);
+    setAdminOpen(false);
+    setAuthRedirect(null);
+    setPaymentOrderId(null);
+    setSelectedProductId(null);
+    setStaticPage(null);
+    resetShopFilters({ category, tags: tag ? [tag] : [] });
+  };
+
+  const handleCategorySelect = (category) => {
+    window.history.pushState(null, '', '/');
+    setAccountOpen(false);
+    setAdminOpen(false);
+    setAuthRedirect(null);
+    setPaymentOrderId(null);
+    setSelectedProductId(null);
+    setStaticPage(null);
+    resetShopFilters({ category });
   };
 
   const openAccount = (redirectTo = null) => {
@@ -241,6 +318,7 @@ function App() {
     setSelectedProductId(null);
     setPaymentOrderId(null);
     setAdminOpen(false);
+    setStaticPage(null);
     setAuthRedirect(redirectTo);
     setAccountOpen(true);
     setCartOpen(false);
@@ -252,6 +330,7 @@ function App() {
     setPaymentOrderId(null);
     setAccountOpen(false);
     setAuthRedirect(null);
+    setStaticPage(null);
     setAdminOpen(true);
     setCartOpen(false);
   };
@@ -261,6 +340,7 @@ function App() {
     setSelectedProductId(null);
     setAccountOpen(false);
     setAdminOpen(false);
+    setStaticPage(null);
     setPaymentOrderId(order.id);
     setPaymentOrder(order);
     setPaymentStatus('ready');
@@ -378,6 +458,15 @@ function App() {
           isLoggedIn={Boolean(authUser)}
           isAdmin={Boolean(authUser?.is_admin)}
           onHome={goHome}
+          onSearch={handleSearch}
+          searchValue={shopFilters.search}
+          categories={filterOptions.categories}
+          onCategorySelect={handleCategorySelect}
+          favoriteCount={favorites.length}
+          onOpenWishlist={() => setWishlistOpen(true)}
+          onQuickFilter={handleQuickFilter}
+          onAbout={() => setStaticPage('about')}
+          onMembership={() => setStaticPage('partnership')}
         />
 
         {adminOpen && !authChecked ? (
@@ -407,6 +496,10 @@ function App() {
           />
         ) : accountOpen ? (
           <AuthPage cartCount={cartCount} onAuthenticated={handleAuthenticated} />
+        ) : staticPage === 'about' ? (
+          <AboutPage onHome={goHome} />
+        ) : staticPage === 'partnership' ? (
+          <PartnershipPage onHome={goHome} />
         ) : selectedProductId && productStatus === 'loading' ? (
           <LoadingState
             title="Loading product"
@@ -424,6 +517,9 @@ function App() {
             onBack={goHome}
             onAddToCart={addToCart}
             onSelectProduct={openProduct}
+            isFavorite={favorites.includes(selectedProduct.id)}
+            onToggleFavorite={toggleFavorite}
+            favorites={favorites}
           />
         ) : (
           <ShopPage
@@ -435,6 +531,8 @@ function App() {
             onAddToCart={addToCart}
             status={catalogStatus}
             error={catalogError}
+            favorites={favorites}
+            onToggleFavorite={toggleFavorite}
           />
         )}
       </section>
@@ -455,6 +553,18 @@ function App() {
       {mobilePanelOpen && (
         <MobileDrawer onClose={() => setMobilePanelOpen(false)} />
       )}
+
+      {wishlistOpen && (
+        <div className="drawer-overlay" onClick={(event) => event.target === event.currentTarget && setWishlistOpen(false)}>
+          <WishlistDrawer
+            isOpen={wishlistOpen}
+            onClose={() => setWishlistOpen(false)}
+            favorites={allProducts.filter((product) => favorites.includes(product.id))}
+            onAdd={addToCart}
+            onRemove={toggleFavorite}
+          />
+        </div>
+      )}
     </main>
   );
 }
@@ -471,6 +581,7 @@ const emptyFilters = {
   occasions: [],
   productTags: [],
   priceRanges: [],
+  search: '',
   sorts: [
     { label: 'Featured', value: 'featured' },
     { label: 'Price: Low to High', value: 'price_asc' },

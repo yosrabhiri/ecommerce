@@ -6,12 +6,15 @@ use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\PartnershipController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ProductController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{product}', [ProductController::class, 'show']);
+Route::get('/products/{product}/recommendations', [ProductController::class, 'recommendations']);
+Route::get('/cart/recommendations', [ProductController::class, 'cartRecommendations']);
 Route::get('/filters', [ProductController::class, 'filters']);
 
 Route::get('/cart', [CartController::class, 'show']);
@@ -29,6 +32,7 @@ Route::get('/account/summary', [AccountController::class, 'summary']);
 Route::get('/orders/{order}', [OrderController::class, 'show']);
 Route::post('/checkout', [CheckoutController::class, 'store']);
 Route::post('/orders/{order}/payment', [PaymentController::class, 'store']);
+Route::post('/partnership', [PartnershipController::class, 'store']);
 
 Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
 Route::get('/admin/products', [AdminController::class, 'products']);

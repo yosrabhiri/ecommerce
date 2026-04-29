@@ -2,7 +2,7 @@ import { ChevronDown, Filter, SlidersHorizontal } from 'lucide-react';
 import { LoadingState } from '../components/LoadingState';
 import { ProductCard } from '../components/product/ProductCard';
 
-export function ShopPage({ filters, selectedFilters, products, onFiltersChange, onSelectProduct, onAddToCart, status, error }) {
+export function ShopPage({ filters, selectedFilters, products, onFiltersChange, onSelectProduct, onAddToCart, status, error, favorites = [], onToggleFavorite }) {
   const toggleArrayFilter = (key, value) => {
     const values = selectedFilters[key];
     const nextValues = values.includes(value)
@@ -130,6 +130,7 @@ export function ShopPage({ filters, selectedFilters, products, onFiltersChange, 
               productTags: [],
               priceRange: null,
               sort: 'featured',
+              search: '',
             })}>
               Clear filters
             </button>
@@ -148,10 +149,12 @@ export function ShopPage({ filters, selectedFilters, products, onFiltersChange, 
             {products.map((product) => (
               <ProductCard
                 key={product.id}
-                product={product}
-                onSelect={onSelectProduct}
-                onAdd={onAddToCart}
-              />
+              product={product}
+              onSelect={onSelectProduct}
+              onAdd={onAddToCart}
+              isFavorite={favorites.includes(product.id)}
+              onToggleFavorite={onToggleFavorite}
+            />
             ))}
           </div>
         )}
