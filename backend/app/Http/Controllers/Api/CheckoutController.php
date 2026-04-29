@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\OrderCreated;
 use App\Http\Controllers\Controller;
 use App\Models\Cart;
 use App\Models\Order;
@@ -97,7 +98,7 @@ class CheckoutController extends Controller
                     'line_total' => $lineTotal,
                 ]);
 
-                $product->decrement('stock', $quantity);
+                // Stock update moved to UpdateStock listener
             }
 
             if (! empty($data['cart_token'])) {
@@ -110,6 +111,9 @@ class CheckoutController extends Controller
 
             return $order->load('items');
         });
+
+        // Trigger event-driven actions
+        event(new OrderCreated($order));
 
         return response()->json([
             'message' => 'Order created. Payment is pending until the real payment flow is added.',

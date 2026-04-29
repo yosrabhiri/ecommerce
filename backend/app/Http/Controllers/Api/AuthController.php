@@ -5,12 +5,15 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Cart;
 use App\Models\User;
-use App\Models\UserAuthToken;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Tymon\JWTAuth\Exceptions\JWTException;
+use Tymon\JWTAuth\Exceptions\TokenExpiredException;
+use Tymon\JWTAuth\Exceptions\TokenInvalidException;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
 {
@@ -68,12 +71,10 @@ class AuthController extends Controller
 
     public function logout(Request $request): JsonResponse
     {
-        $token = $request->bearerToken();
-
-        if ($token) {
-            UserAuthToken::query()
-                ->where('token_hash', hash('sha256', $token))
-                ->delete();
+        try {
+            JWTAuth::parseToken()->invalidate();
+        } catch (TokenExpiredException | TokenInvalidException | JWTException $exception) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
         }
 
         return response()->json(['message' => 'Signed out.']);
@@ -81,40 +82,21 @@ class AuthController extends Controller
 
     public static function userFromBearerToken(Request $request): ?User
     {
-        $token = $request->bearerToken();
-
-        if (! $token) {
+        try {
+            return JWTAuth::parseToken()->authenticate();
+        } catch (TokenExpiredException | TokenInvalidException | JWTException $exception) {
             return null;
         }
-
-        $authToken = UserAuthToken::query()
-            ->with('user')
-            ->where('token_hash', hash('sha256', $token))
-            ->where(function ($query) {
-                $query->whereNull('expires_at')->orWhere('expires_at', '>', now());
-            })
-            ->first();
-
-        if (! $authToken) {
-            return null;
-        }
-
-        $authToken->forceFill(['last_used_at' => now()])->save();
-
-        return $authToken->user;
     }
 
     private function authPayload(User $user): array
     {
-        $plainToken = Str::random(80);
-
-        $user->authTokens()->create([
-            'name' => 'web',
-            'token_hash' => hash('sha256', $plainToken),
-        ]);
+        $token = JWTAuth::fromUser($user);
 
         return [
-            'token' => $plainToken,
+            'token' => $token,
+            'token_type' => 'Bearer',
+            'expires_in' => config('jwt.ttl') * 60,
             'user' => $this->userPayload($user),
         ];
     }
