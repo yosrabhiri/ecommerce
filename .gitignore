@@ -1,0 +1,26 @@
+# Local environment
+**/.env
+**/.env.*
+!**/.env.example
+
+# Dependencies
+backend/vendor/
+backend/node_modules/
+frontend/node_modules/
+
+# Build output and logs
+frontend/dist/
+frontend/*.log
+backend/storage/logs/*.log
+backend/.phpunit.result.cache
+
+# Local databases and caches
+backend/database/*.sqlite
+backend/database/database/*.sqlite
+backend/bootstrap/cache/*.php
+
+# Editor/system files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
