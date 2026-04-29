@@ -28,6 +28,7 @@ Route::get('/auth/me', [AuthController::class, 'me']);
 Route::post('/auth/logout', [AuthController::class, 'logout']);
 
 Route::get('/account/summary', [AccountController::class, 'summary']);
+Route::get('/payments', [AccountController::class, 'payments']);
 
 Route::get('/orders/{order}', [OrderController::class, 'show']);
 Route::post('/checkout', [CheckoutController::class, 'store']);

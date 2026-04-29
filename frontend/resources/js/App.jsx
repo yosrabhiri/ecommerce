@@ -8,9 +8,11 @@ import { WishlistDrawer } from './components/WishlistDrawer';
 import { AuthPage } from './pages/AuthPage';
 import { AdminPage } from './pages/AdminPage';
 import { AboutPage } from './pages/AboutPage';
+import { CheckoutPage } from './pages/CheckoutPage';
 import { CustomerAccountPage } from './pages/CustomerAccountPage';
 import { PartnershipPage } from './pages/PartnershipPage';
 import { PaymentPage } from './pages/PaymentPage';
+import { PaymentSuccessPage } from './pages/PaymentSuccessPage';
 import { ProductPage } from './pages/ProductPage';
 import { ShopPage } from './pages/ShopPage';
 import { fetchCurrentUser, logoutAccount } from './services/authApi';
@@ -59,6 +61,14 @@ function isAdminPath() {
   return window.location.pathname === '/admin';
 }
 
+function isCheckoutPath() {
+  return window.location.pathname === '/checkout';
+}
+
+function isPaymentSuccessPath() {
+  return window.location.pathname === '/payment/success';
+}
+
 function getPaymentOrderIdFromPath() {
   const match = window.location.pathname.match(/^\/payment\/(\d+)/);
   return match ? Number(match[1]) : null;
@@ -88,10 +98,13 @@ function App() {
   const [accountOpen, setAccountOpen] = useState(isAccountPath());
   const [adminOpen, setAdminOpen] = useState(isAdminPath());
   const [authRedirect, setAuthRedirect] = useState(isAdminPath() ? 'admin' : null);
+  const [checkoutOpen, setCheckoutOpen] = useState(isCheckoutPath());
   const [paymentOrderId, setPaymentOrderId] = useState(getPaymentOrderIdFromPath());
   const [paymentOrder, setPaymentOrder] = useState(null);
   const [paymentStatus, setPaymentStatus] = useState(paymentOrderId ? 'loading' : 'idle');
   const [paymentError, setPaymentError] = useState(null);
+  const [successOrder, setSuccessOrder] = useState(null);
+  const [successOpen, setSuccessOpen] = useState(isPaymentSuccessPath());
   const [cartOpen, setCartOpen] = useState(false);
   const [cart, setCart] = useState([]);
   const [authUser, setAuthUser] = useState(null);
@@ -185,6 +198,8 @@ function App() {
       setSelectedProductId(getProductIdFromPath());
       setAccountOpen(isAccountPath());
       setAdminOpen(isAdminPath());
+      setCheckoutOpen(isCheckoutPath());
+      setSuccessOpen(isPaymentSuccessPath());
       setPaymentOrderId(getPaymentOrderIdFromPath());
       setStaticPage(null);
     };
@@ -259,6 +274,9 @@ function App() {
     setPaymentOrderId(null);
     setSelectedProductId(null);
     setStaticPage(null);
+    setCheckoutOpen(false);
+    setSuccessOpen(false);
+    setSuccessOrder(null);
   };
 
   const resetShopFilters = (overrides = {}) => {
@@ -319,6 +337,8 @@ function App() {
     setPaymentOrderId(null);
     setAdminOpen(false);
     setStaticPage(null);
+    setCheckoutOpen(false);
+    setSuccessOpen(false);
     setAuthRedirect(redirectTo);
     setAccountOpen(true);
     setCartOpen(false);
@@ -329,10 +349,41 @@ function App() {
     setSelectedProductId(null);
     setPaymentOrderId(null);
     setAccountOpen(false);
+    setCheckoutOpen(false);
+    setSuccessOpen(false);
     setAuthRedirect(null);
     setStaticPage(null);
     setAdminOpen(true);
     setCartOpen(false);
+  };
+
+  const openCheckout = () => {
+    if (!authUser) {
+      openAccount('checkout');
+      return;
+    }
+    window.history.pushState(null, '', '/checkout');
+    setSelectedProductId(null);
+    setAccountOpen(false);
+    setAdminOpen(false);
+    setPaymentOrderId(null);
+    setSuccessOpen(false);
+    setCheckoutOpen(true);
+    setCartOpen(false);
+  };
+
+  const performCheckout = () => {
+    setCheckoutStatus(null);
+    setCheckingOut(true);
+
+    createCheckout(cart)
+      .then((payload) => {
+        setCart([]);
+        setCheckoutOpen(false);
+        openPayment(payload.order);
+      })
+      .catch((error) => setCheckoutStatus(error.message))
+      .finally(() => setCheckingOut(false));
   };
 
   const openPayment = (order) => {
@@ -341,6 +392,8 @@ function App() {
     setAccountOpen(false);
     setAdminOpen(false);
     setStaticPage(null);
+    setCheckoutOpen(false);
+    setSuccessOpen(false);
     setPaymentOrderId(order.id);
     setPaymentOrder(order);
     setPaymentStatus('ready');
@@ -393,24 +446,6 @@ function App() {
     }
   };
 
-  const checkout = () => {
-    setCheckoutStatus(null);
-
-    if (!authUser) {
-      openAccount('checkout');
-      return;
-    }
-
-    setCheckingOut(true);
-
-    createCheckout(cart)
-      .then((payload) => {
-        setCart([]);
-        openPayment(payload.order);
-      })
-      .catch((error) => setCheckoutStatus(error.message))
-      .finally(() => setCheckingOut(false));
-  };
 
   const handleAuthenticated = (user) => {
     setAuthUser(user);
@@ -421,8 +456,14 @@ function App() {
     }
 
     if (authRedirect === 'checkout') {
-      setCartOpen(true);
-      setCheckoutStatus('Account ready. You can continue checkout from your panier.');
+      window.history.pushState(null, '', '/checkout');
+      setAccountOpen(false);
+      setAdminOpen(false);
+      setPaymentOrderId(null);
+      setSuccessOpen(false);
+      setAuthRedirect(null);
+      setCheckoutOpen(true);
+      setCartOpen(false);
       return;
     }
 
@@ -434,8 +475,12 @@ function App() {
   };
 
   const handlePaid = (order) => {
-    setPaymentOrder(order);
-    setPaymentStatus('ready');
+    window.history.pushState(null, '', '/payment/success');
+    setPaymentOrderId(null);
+    setPaymentOrder(null);
+    setPaymentStatus('idle');
+    setSuccessOrder(order);
+    setSuccessOpen(true);
   };
 
   const logout = async () => {
@@ -476,6 +521,20 @@ function App() {
           />
         ) : adminOpen ? (
           <AdminPage user={authUser} onAccount={() => openAccount('admin')} />
+        ) : successOpen ? (
+          <PaymentSuccessPage
+            order={successOrder}
+            onContinueShopping={goHome}
+            onAccount={() => openAccount()}
+          />
+        ) : checkoutOpen ? (
+          <CheckoutPage
+            cart={cart}
+            onCheckout={performCheckout}
+            isCheckingOut={checkingOut}
+            checkoutStatus={checkoutStatus}
+            onBack={goHome}
+          />
         ) : paymentOrderId && paymentStatus === 'loading' ? (
           <LoadingState
             title="Loading payment"
@@ -544,7 +603,7 @@ function App() {
           onAdd={addToCart}
           onRemove={removeFromCart}
           onDelete={deleteFromCart}
-          onCheckout={checkout}
+          onCheckout={openCheckout}
           isCheckingOut={checkingOut}
           checkoutStatus={checkoutStatus || cartStatus}
         />
