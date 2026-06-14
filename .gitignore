@@ -11,8 +11,10 @@ frontend/node_modules/
 # Build output and logs
 frontend/dist/
 frontend/*.log
+*.log
 backend/storage/logs/*.log
 backend/.phpunit.result.cache
+.edge-headless/
 
 # Local databases and caches
 backend/database/*.sqlite

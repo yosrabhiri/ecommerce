@@ -2,9 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Mail\PaymentReceiptMail;
 use App\Models\Product;
 use Database\Seeders\ProductSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class EcommerceApiTest extends TestCase
@@ -152,6 +154,8 @@ class EcommerceApiTest extends TestCase
             ])
             ->json('order.id');
 
+        Mail::fake();
+
         $response = $this
             ->withHeader('Authorization', "Bearer {$token}")
             ->postJson("/api/orders/{$orderId}/payment", [
@@ -166,13 +170,21 @@ class EcommerceApiTest extends TestCase
             ->assertJsonPath('order.status', 'confirmed')
             ->assertJsonPath('order.payment_status', 'paid')
             ->assertJsonPath('order.payments.0.status', 'paid')
-            ->assertJsonPath('order.payments.0.card_last_four', '4242');
+            ->assertJsonPath('order.payments.0.card_last_four', '4242')
+            ->assertJsonPath('order.receipt_email', 'pay@example.com')
+            ->assertJsonPath('order.receipt_sent', true);
 
         $this->assertDatabaseHas('payments', [
             'order_id' => $orderId,
             'status' => 'paid',
             'card_last_four' => '4242',
         ]);
+
+        Mail::assertSent(PaymentReceiptMail::class, function (PaymentReceiptMail $mail) {
+            return $mail->hasTo('pay@example.com')
+                && $mail->order->payment_status === 'paid'
+                && $mail->payment?->card_last_four === '4242';
+        });
     }
 
     public function test_customer_account_summary_shows_orders_and_payments(): void

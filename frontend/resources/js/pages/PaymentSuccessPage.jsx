@@ -1,4 +1,4 @@
-import { CheckCircle, Package } from 'lucide-react';
+import { CheckCircle, MailCheck, Package, ReceiptText } from 'lucide-react';
 
 export function PaymentSuccessPage({ order, onContinueShopping, onAccount }) {
   return (
@@ -39,10 +39,28 @@ export function PaymentSuccessPage({ order, onContinueShopping, onAccount }) {
             )}
 
             {order.payments?.[0] && (
-              <p className="success-card">
-                Charged to {order.payments[0].card_brand} ****{' '}
-                {order.payments[0].card_last_four}
-              </p>
+              <div className="success-receipt">
+                <p>
+                  <ReceiptText size={15} />
+                  <span>Transaction</span>
+                  <strong>{order.payments[0].transaction_reference}</strong>
+                </p>
+                <p>
+                  <span>Card</span>
+                  <strong>
+                    {order.payments[0].card_brand} **** {order.payments[0].card_last_four}
+                  </strong>
+                </p>
+                <p>
+                  <MailCheck size={15} />
+                  <span>Receipt</span>
+                  <strong>
+                    {order.receipt_sent === false
+                      ? 'Email pending'
+                      : `Sent to ${order.receipt_email || 'your email'}`}
+                  </strong>
+                </p>
+              </div>
             )}
           </div>
         )}

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { AiAssistant } from './components/AiAssistant';
 import { CartDrawer } from './components/cart/CartDrawer';
 import { Header } from './components/Header';
 import { LoadingState } from './components/LoadingState';
@@ -624,6 +625,12 @@ function App() {
           />
         </div>
       )}
+
+      <AiAssistant
+        products={allProducts.length ? allProducts : catalogProducts}
+        cart={cart}
+        favorites={favorites}
+      />
     </main>
   );
 }

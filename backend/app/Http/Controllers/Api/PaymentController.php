@@ -3,11 +3,15 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Mail\PaymentReceiptMail;
 use App\Models\Order;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class PaymentController extends Controller
 {
@@ -69,8 +73,27 @@ class PaymentController extends Controller
             return $order->load(['items', 'payments']);
         });
 
+        $receiptEmail = $order->customer_email ?: $user->email;
+
+        if ($receiptEmail) {
+            try {
+                Mail::to($receiptEmail)->send(new PaymentReceiptMail($order));
+                $order->setAttribute('receipt_email', $receiptEmail);
+                $order->setAttribute('receipt_sent', true);
+            } catch (Throwable $exception) {
+                Log::warning('Payment receipt email could not be sent.', [
+                    'order_id' => $order->id,
+                    'email' => $receiptEmail,
+                    'error' => $exception->getMessage(),
+                ]);
+
+                $order->setAttribute('receipt_email', $receiptEmail);
+                $order->setAttribute('receipt_sent', false);
+            }
+        }
+
         return response()->json([
-            'message' => 'Payment accepted.',
+            'message' => 'Payment accepted. Receipt email generated.',
             'order' => $order,
         ], 201);
     }

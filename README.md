@@ -152,6 +152,28 @@ The frontend proxies `/api` requests to the Laravel backend.
 
 The payment flow is a local demo processor. It validates the card shape and stores only the card brand and last four digits. It does not charge real money. A real provider such as Stripe can be added later.
 
+## Gmail Payment Receipts
+
+Payment receipts are sent by the Laravel backend after `POST /api/orders/{order}/payment`. To send them with a Gmail App Password, set these values in `backend/.env`:
+
+```env
+MAIL_MAILER=smtp
+MAIL_SCHEME=smtps
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=465
+MAIL_USERNAME=your-gmail-address@gmail.com
+MAIL_PASSWORD="your-16-character-gmail-app-password"
+MAIL_FROM_ADDRESS="${MAIL_USERNAME}"
+MAIL_FROM_NAME="${APP_NAME}"
+```
+
+Create the app password from your Google account security settings. Your Gmail account must have 2-Step Verification enabled. Paste the 16-character app password into `MAIL_PASSWORD`, then run:
+
+```bash
+cd backend
+php artisan config:clear
+```
+
 ## Tests
 
 Run backend tests:
