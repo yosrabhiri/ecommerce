@@ -9,11 +9,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('products', function (Blueprint $table) {
-            $table->string('material')->nullable()->after('description');
-            $table->string('skin_type')->nullable()->after('material');
-            $table->string('skin_concern')->nullable()->after('skin_type');
-            $table->string('occasion')->nullable()->after('skin_concern');
-            $table->json('product_tags')->nullable()->after('occasion');
+            $table->string('material')->nullable();
+            $table->string('skin_type')->nullable();
+            $table->string('skin_concern')->nullable();
+            $table->string('occasion')->nullable();
+            $table->json('product_tags')->nullable();
         });
 
         Schema::create('product_variants', function (Blueprint $table) {
